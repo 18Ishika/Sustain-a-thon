@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ weather.city }} Weather - Indian Coastal Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background-color: #ffffff;
+            border-bottom: 3px solid #2563eb;
+            padding: 25px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        h1 {
+            color: #1e40af;
+            font-size: 2em;
+        }
+
+        .nav-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select, .back-btn, .storm-btn {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        select {
+            min-width: 250px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        select:focus {
+            border-color: #2563eb;
+        }
+
+        .back-btn {
+            background-color: #64748b;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .back-btn:hover {
+            background-color: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
+        }
+
+        .storm-btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .storm-btn:hover {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 968px) {
+            .weather-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            select {
+                min-width: 180px;
+            }
+
+            .nav-section {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+        }
+
+        .weather-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .city-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .city-name {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .coast-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: white;
+        }
+
+        .badge-east { background-color: #ef4444; }
+        .badge-west { background-color: #3b82f6; }
+
+        .temp-display {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .main-temp {
+            font-size: 4em;
+            font-weight: bold;
+            color: #0369a1;
+            line-height: 1;
+        }
+
+        .condition {
+            font-size: 1.2em;
+            color: #64748b;
+            text-transform: capitalize;
+            margin-top: 10px;
+        }
+
+        .feels-like {
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .detail-item {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .detail-icon {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .detail-content {
+            flex: 1;
+        }
+
+        .detail-label {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .map-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .map-title {
+            font-size: 1.5em;
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1><i class="fas fa-water"></i> Indian Coastal Weather Dashboard</h1>
+            <div class="nav-section">
+                <a href="/" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Home
+                </a>
+                <a href="/storm/{{ weather.city }}" class="storm-btn">
+                    <i class="fas fa-bolt"></i> Storm Alert
+                </a>
+                <select id="citySelect" onchange="changeCity()">
+                    <option value="">Select another city...</option>
+                    <optgroup label="East Coast">
+                        {% for city in cities %}
+                            {% if city.coast == 'East Coast' %}
+                                <option value="{{ city.name }}" {% if city.name == selected_city %}selected{% endif %}>{{ city.name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="West Coast">
+                        {% for city in cities %}
+                            {% if city.coast == 'West Coast' %}
+                                <option value="{{ city.name }}" {% if city.name == selected_city %}selected{% endif %}>{{ city.name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="weather-grid">
+            <div class="weather-card">
+                <div class="city-header">
+                    <h2 class="city-name">{{ weather.city }}</h2>
+                    <span class="coast-badge {% if weather.coast == 'East Coast' %}badge-east{% else %}badge-west{% endif %}">
+                        {{ weather.coast }}
+                    </span>
+                </div>
+
+                <div class="temp-display">
+                    <div class="main-temp">{{ weather.temp }}°C</div>
+                    <div class="condition">{{ weather.condition }}</div>
+                    <div class="feels-like">Feels like {{ weather.feels_like }}°C</div>
+                </div>
+
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-temperature-high" style="color: #ef4444;"></i></div>
+                        <div class="detail-content">
+                            <div class="detail-label">Max Temperature</div>
+                            <div class="detail-value">{{ weather.temp_max }}°C</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-temperature-low" style="color: #3b82f6;"></i></div>
+                        <div class="detail-content">
+                            <div class="detail-label">Min Temperature</div>
+                            <div class="detail-value">{{ weather.temp_min }}°C</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-tint" style="color: #06b6d4;"></i></div>
+                        <div class="detail-content">
+                            <div class="detail-label">Humidity</div>
+                            <div class="detail-value">{{ weather.humidity }}%</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-wind" style="color: #8b5cf6;"></i></div>
+                        <div class="detail-content">
+                            <div class="detail-label">Wind Speed</div>
+                            <div class="detail-value">{{ weather.wind_speed }} m/s</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-gauge" style="color: #f59e0b;"></i></div>
+                        <div class="detail-content">
+                            <div class="detail-label">Pressure</div>
+                            <div class="detail-value">{{ weather.pressure }} hPa</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <div class="detail-icon"><i class="fas fa-eye" style="color: #10b981;"></i></div>
+                        <div class="detail-content">
+                            <div class="detail-label">Visibility</div>
+                            <div class="detail-value">{{ weather.visibility }} km</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <h3 class="map-title"><i class="fas fa-map-marker-alt"></i> Location</h3>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let marker;
+
+        function initMap() {
+            const lat = {{ weather.lat }};
+            const lon = {{ weather.lon }};
+            
+            map = L.map('map').setView([lat, lon], 10);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            const indiaBounds = L.latLngBounds(
+                [6.5, 68.0],
+                [35.5, 97.5]
+            );
+            map.setMaxBounds(indiaBounds);
+            map.setMinZoom(5);
+            map.setMaxZoom(15);
+
+            marker = L.marker([lat, lon]).addTo(map)
+                .bindPopup(`<b>{{ weather.city }}</b><br>{{ weather.temp }}°C - {{ weather.condition }}`)
+                .openPopup();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+        });
+
+        function changeCity() {
+            const select = document.getElementById('citySelect');
+            const cityName = select.value;
+            
+            if (cityName) {
+                window.location.href = `/weather/${cityName}`;
+            }
+        }
+    </script>
+</body>
+</html>

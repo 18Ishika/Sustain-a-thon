@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storm Prediction - {{ weather.city }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background-color: #ffffff;
+            border-bottom: 3px solid #ef4444;
+            padding: 25px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        h1 {
+            color: #dc2626;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-section { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        select, .back-btn {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        select {
+            min-width: 250px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        select:focus { border-color: #ef4444; }
+
+        .back-btn {
+            background-color: #64748b;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .back-btn:hover {
+            background-color: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
+        }
+
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+
+        .alert-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            border-left: 6px solid {{ storm.alert_color }};
+        }
+
+        .city-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .city-name {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .risk-badge {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.1em;
+            background: {{ storm.alert_color }};
+            color: white;
+        }
+
+        .probability-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .probability-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient({{ storm.alert_color }} 0% {{ storm.probability }}%, #e5e7eb {{ storm.probability }}% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .probability-inner {
+            width: 160px;
+            height: 160px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .probability-value {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: {{ storm.alert_color }};
+        }
+
+        .probability-label {
+            font-size: 0.9em;
+            color: #64748b;
+        }
+
+        .wind-indicator {
+            text-align: center;
+        }
+
+        .wind-arrow {
+            font-size: 4em;
+            color: {{ storm.alert_color }};
+            transform: rotate({{ storm.wind_degrees }}deg);
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .wind-info {
+            margin-top: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .wind-desc {
+            color: #64748b;
+            font-size: 0.9em;
+        }
+
+        .recommendation-box {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid {{ storm.alert_color }};
+        }
+
+        .recommendation-box strong {
+            color: {{ storm.alert_color }};
+            font-size: 1.1em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 968px) {
+            .grid { grid-template-columns: 1fr; }
+            h1 { font-size: 1.5em; }
+            select { min-width: 180px; }
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .factors-list { list-style: none; }
+
+        .factor-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .factor-icon {
+            color: #f59e0b;
+            font-size: 1.3em;
+            min-width: 30px;
+        }
+
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .forecast-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .forecast-time {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #1e293b;
+        }
+
+        .forecast-temp {
+            font-size: 2em;
+            color: #0369a1;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .forecast-condition {
+            font-size: 0.9em;
+            color: #64748b;
+            text-transform: capitalize;
+        }
+
+        .map-container {
+            height: 500px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .nearby-risks {
+            margin-top: 20px;
+        }
+
+        .risk-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #cbd5e1;
+        }
+
+        .risk-item.high { border-left-color: #ef4444; }
+        .risk-item.moderate { border-left-color: #f59e0b; }
+        .risk-item.low { border-left-color: #10b981; }
+
+        .risk-city {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .risk-prob {
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        .risk-prob.high { background: #fee2e2; color: #dc2626; }
+        .risk-prob.moderate { background: #fef3c7; color: #d97706; }
+        .risk-prob.low { background: #d1fae5; color: #059669; }
+
+        .current-conditions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .condition-box {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .condition-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+
+        .condition-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #0369a1;
+        }
+
+        .condition-label {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .current-conditions { grid-template-columns: repeat(2, 1fr); }
+            .probability-circle { width: 150px; height: 150px; }
+            .probability-inner { width: 120px; height: 120px; }
+            .probability-value { font-size: 2.5em; }
+            .wind-arrow { font-size: 3em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1><i class="fas fa-bolt"></i> Storm Prediction System</h1>
+            <div class="nav-section">
+                <a href="/" class="back-btn"><i class="fas fa-home"></i> Home</a>
+                <a href="/weather/{{ weather.city }}" class="back-btn"><i class="fas fa-cloud-sun"></i> Weather</a>
+                <select id="citySelect" onchange="changeCity()">
+                    <option value="">Select another city...</option>
+                    {% for city in cities %}
+                        <option value="{{ city.name }}" {% if city.name == selected_city %}selected{% endif %}>{{ city.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="alert-card">
+            <div class="city-header">
+                <h2 class="city-name">{{ weather.city }}, {{ coast }}</h2>
+                <span class="risk-badge">{{ storm.risk_level }} Risk</span>
+            </div>
+
+            <div class="probability-section">
+                <div class="probability-circle">
+                    <div class="probability-inner">
+                        <div class="probability-value">{{ storm.probability }}%</div>
+                        <div class="probability-label">Storm Probability</div>
+                    </div>
+                </div>
+
+                <div class="wind-indicator">
+                    <div class="wind-arrow">
+                        <i class="fas fa-location-arrow"></i>
+                    </div>
+                    <div class="wind-info">{{ storm.wind_direction }}</div>
+                    <div class="wind-desc">{{ storm.wind_info }}</div>
+                    <div class="wind-desc" style="margin-top: 5px;">{{ weather.wind_speed }} m/s</div>
+                </div>
+            </div>
+
+            <div class="recommendation-box">
+                <strong><i class="fas fa-info-circle"></i> Safety Recommendation:</strong><br>
+                <span style="color: #1e293b; margin-top: 8px; display: block;">{{ storm.recommendation }}</span>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3 class="card-title"><i class="fas fa-list-check"></i> Risk Factors Analysis</h3>
+                <ul class="factors-list">
+                    {% for factor in storm.factors %}
+                    <li class="factor-item">
+                        <i class="fas fa-exclamation-triangle factor-icon"></i>
+                        <span>{{ factor }}</span>
+                    </li>
+                    {% endfor %}
+                    {% if storm.factors|length == 0 %}
+                    <li class="factor-item">
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                        <span>No significant storm risk factors detected</span>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <div class="current-conditions">
+                    <div class="condition-box">
+                        <div class="condition-icon"><i class="fas fa-gauge" style="color: #f59e0b;"></i></div>
+                        <div class="condition-value">{{ weather.pressure }}</div>
+                        <div class="condition-label">Pressure (hPa)</div>
+                    </div>
+                    <div class="condition-box">
+                        <div class="condition-icon"><i class="fas fa-tint" style="color: #06b6d4;"></i></div>
+                        <div class="condition-value">{{ weather.humidity }}%</div>
+                        <div class="condition-label">Humidity</div>
+                    </div>
+                    <div class="condition-box">
+                        <div class="condition-icon"><i class="fas fa-wind" style="color: #8b5cf6;"></i></div>
+                        <div class="condition-value">{{ weather.wind_speed }}</div>
+                        <div class="condition-label">Wind (m/s)</div>
+                    </div>
+                </div>
+
+                <div class="nearby-risks">
+                    <h4 style="margin-top: 25px; margin-bottom: 15px; color: #1e293b; font-size: 1.2em;">
+                        <i class="fas fa-map-marked-alt"></i> Nearby Coastal Areas Risk
+                    </h4>
+                    {% if nearby_risks %}
+                        {% for risk in nearby_risks %}
+                        <div class="risk-item {% if risk.probability >= 60 %}high{% elif risk.probability >= 35 %}moderate{% else %}low{% endif %}">
+                            <div>
+                                <span class="risk-city">{{ risk.city }}</span>
+                                <span style="color: #64748b; font-size: 0.9em; margin-left: 10px;">{{ risk.distance }} km away</span>
+                            </div>
+                            <span class="risk-prob {% if risk.probability >= 60 %}high{% elif risk.probability >= 35 %}moderate{% else %}low{% endif %}">
+                                {{ risk.probability }}%
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: #64748b; padding: 15px; text-align: center;">No nearby coastal areas data available</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title"><i class="fas fa-map"></i> Regional Storm Risk Map</h3>
+                <div class="map-container" id="stormMap"></div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3 class="card-title"><i class="fas fa-clock"></i> 12-Hour Forecast</h3>
+                {% if forecast %}
+                <div class="forecast-grid">
+                    {% for f in forecast %}
+                    <div class="forecast-card">
+                        <div class="forecast-time">{{ f.time }}</div>
+                        <div class="forecast-temp">{{ f.temp }}°C</div>
+                        <div class="forecast-condition">{{ f.condition }}</div>
+                        <div style="margin-top: 10px; font-size: 0.85em; color: #64748b;">
+                            <div>💧 {{ f.humidity }}%</div>
+                            <div>💨 {{ f.wind_speed }} m/s</div>
+                            <div>📊 {{ f.pressure }} hPa</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="text-align: center; padding: 40px; color: #64748b;">Forecast data temporarily unavailable</p>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <h3 class="card-title"><i class="fas fa-chart-line"></i> Weather Trend Analysis</h3>
+                <div class="chart-wrapper">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stormMap;
+
+        function initStormMap() {
+            const lat = {{ weather.lat }};
+            const lon = {{ weather.lon }};
+            
+            stormMap = L.map('stormMap').setView([lat, lon], 7);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(stormMap);
+
+            const indiaBounds = L.latLngBounds([6.5, 68.0], [35.5, 97.5]);
+            stormMap.setMaxBounds(indiaBounds);
+            stormMap.setMinZoom(5);
+
+            // Current city marker with wind direction
+            const currentIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background: {{ storm.alert_color }}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                    <i class="fas fa-exclamation" style="transform: rotate({{ storm.wind_degrees }}deg);"></i>
+                </div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            L.marker([lat, lon], { icon: currentIcon }).addTo(stormMap)
+                .bindPopup(`<b>{{ weather.city }}</b><br>
+                    Storm Risk: <b style="color: {{ storm.alert_color }};">{{ storm.probability }}%</b><br>
+                    Wind: {{ storm.wind_direction }} {{ weather.wind_speed }} m/s<br>
+                    Pressure: {{ weather.pressure }} hPa`).openPopup();
+
+            // Wind direction arrow from current city
+            const windEndLat = lat + Math.cos(({{ storm.wind_degrees }} - 180) * Math.PI / 180) * 0.5;
+            const windEndLon = lon + Math.sin(({{ storm.wind_degrees }} - 180) * Math.PI / 180) * 0.5;
+            
+            L.polyline([[lat, lon], [windEndLat, windEndLon]], {
+                color: '{{ storm.alert_color }}',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '10, 10'
+            }).addTo(stormMap).bindPopup('Wind Direction');
+
+            // Add nearby cities with risk indicators
+            {% if nearby_risks %}
+            const nearbyData = {{ nearby_risks | tojson }};
+            nearbyData.forEach(risk => {
+                let color, size;
+                if (risk.probability >= 60) {
+                    color = '#dc2626';
+                    size = 30;
+                } else if (risk.probability >= 35) {
+                    color = '#f59e0b';
+                    size = 25;
+                } else {
+                    color = '#10b981';
+                    size = 20;
+                }
+
+                const marker = L.circleMarker([risk.lat, risk.lon], {
+                    radius: size / 2,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.7
+                }).addTo(stormMap);
+
+                marker.bindPopup(`<b>${risk.city}</b><br>
+                    Risk: <b style="color: ${color};">${risk.probability}%</b><br>
+                    Distance: ${risk.distance} km<br>
+                    Status: ${risk.risk_level}`);
+            });
+            {% endif %}
+
+            // Add legend
+            const legend = L.control({ position: 'bottomright' });
+            legend.onAdd = function(map) {
+                const div = L.DomUtil.create('div', 'info legend');
+                div.style.background = 'white';
+                div.style.padding = '10px';
+                div.style.borderRadius = '8px';
+                div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                div.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 5px;">Storm Risk Level</div>
+                    <div><span style="color: #dc2626;">●</span> Very High (60%+)</div>
+                    <div><span style="color: #f59e0b;">●</span> High/Moderate (35-59%)</div>
+                    <div><span style="color: #10b981;">●</span> Low (<35%)</div>
+                `;
+                return div;
+            };
+            legend.addTo(stormMap);
+        }
+
+        function changeCity() {
+            const city = document.getElementById('citySelect').value;
+            if (city) window.location.href = `/storm/${city}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initStormMap();
+
+            {% if forecast %}
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            const forecastData = {{ forecast | tojson }};
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: forecastData.map(f => f.time),
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: forecastData.map(f => f.temp),
+                        borderColor: 'rgb(3, 105, 161)',
+                        backgroundColor: 'rgba(3, 105, 161, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Humidity (%)',
+                        data: forecastData.map(f => f.humidity),
+                        borderColor: 'rgb(6, 182, 212)',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }, {
+                        label: 'Pressure (hPa)',
+                        data: forecastData.map(f => f.pressure),
+                        borderColor: 'rgb(245, 158, 11)',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y2'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Weather Parameters Forecast' }
+                    },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Temp (°C)' } },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Humidity (%)' } },
+                        y2: { type: 'linear', display: false }
+                    }
+                }
+            });
+            {% endif %}
+        });
+    </script>
+</body>
+</html>
