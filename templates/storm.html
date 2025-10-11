@@ -3,384 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Storm Prediction - {{ weather.city }}</title>
+    <title>Storm Risk - {{ weather.city }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; color: #1e293b; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-        }
-
-        .header {
-            background-color: #ffffff;
-            border-bottom: 3px solid #ef4444;
-            padding: 25px 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        h1 {
-            color: #dc2626;
-            font-size: 2em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-section { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-
-        select, .back-btn {
-            padding: 12px 20px;
-            font-size: 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            outline: none;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        select {
-            min-width: 250px;
-            background-color: white;
-            cursor: pointer;
-        }
-
-        select:focus { border-color: #ef4444; }
-
-        .back-btn {
-            background-color: #64748b;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .back-btn:hover {
-            background-color: #475569;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
-        }
+        .header { background-color: #ffffff; border-bottom: 3px solid #2563eb; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header-content { max-width: 1400px; margin: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        h1 { color: #2563eb; font-size: 2em; display: flex; align-items: center; gap: 10px; }
+        .nav-section { display: flex; gap: 10px; flex-wrap: wrap; }
+        .back-btn, .city-search-btn { padding: 10px 18px; font-size: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: all 0.3s; display: inline-block; }
+        .back-btn { background-color: #64748b; color: white; }
+        .back-btn:hover { background-color: #475569; transform: translateY(-2px); }
+        .city-search-btn { background-color: #2563eb; color: white; }
+        .city-search-btn:hover { background-color: #1d4ed8; transform: translateY(-2px); }
 
         .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
 
-        .alert-card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
-            border-left: 6px solid {{ storm.alert_color }};
+        .alert-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 10000; padding: 15px 20px; display: none; align-items: center; justify-content: space-between; animation: slideDown 0.5s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .alert-banner.critical { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+        .alert-banner.high { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .alert-banner.moderate { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .alert-banner-content { display: flex; align-items: center; gap: 15px; color: white; flex: 1; }
+        .alert-banner-icon { font-size: 2em; animation: pulse 2s infinite; }
+        .alert-banner-text { flex: 1; }
+        .alert-banner-text h3 { margin: 0 0 5px 0; font-size: 1.2em; }
+        .alert-banner-text p { margin: 0; font-size: 0.9em; opacity: 0.95; }
+        .alert-close { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5em; cursor: pointer; padding: 5px 12px; border-radius: 6px; transition: all 0.3s; }
+        .alert-close:hover { background: rgba(255,255,255,0.3); }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+        .alert-card, .card { background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); margin-bottom: 30px; }
+        .city-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .city-name { font-size: 2em; font-weight: bold; }
+        .risk-badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 1em; background: {{ storm.alert_color }}; color: white; }
+
+        .probability-section { display: flex; justify-content: space-around; align-items: center; gap: 20px; flex-wrap: wrap; margin: 25px 0; }
+        .probability-circle { width: 180px; height: 180px; border-radius: 50%; background: conic-gradient({{ storm.alert_color }} 0% {{ storm.probability }}%, #e5e7eb {{ storm.probability }}% 100%); display: flex; align-items: center; justify-content: center; position: relative; }
+        .probability-inner { width: 140px; height: 140px; background: #f5f5f5; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; }
+        .probability-value { font-size: 3em; font-weight: bold; color: {{ storm.alert_color }}; }
+        .probability-label { font-size: 0.9em; color: #475569; }
+
+        .wind-indicator { text-align: center; }
+        .wind-arrow { font-size: 3em; color: {{ storm.alert_color }}; transform: rotate({{ weather.wind_deg }}deg); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .wind-info { font-weight: bold; margin-top: 8px; }
+        .wind-desc { color: #64748b; font-size: 0.9em; }
+
+        .storm-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+        .info-box { background: #ffffff; padding: 20px; border-radius: 12px; border: 2px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all 0.3s; position: relative; overflow: hidden; }
+        .info-box:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.15); border-color: {{ storm.alert_color }}; }
+        .info-box h3 { font-size: 0.9em; color: #475569; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; z-index: 1; position: relative; }
+        .info-box .value { font-size: 1.4em; font-weight: bold; color: #1e293b; z-index: 1; position: relative; }
+
+        .info-box.accent { border: 2px solid {{ storm.alert_color }}; background: linear-gradient(135deg, #ffffff, #f9fafb); }
+        .info-box.accent::before {
+            content: "";
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle at center, {{ storm.alert_color }}22, transparent 70%);
+            transform: rotate(25deg);
+            z-index: 0;
         }
 
-        .city-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e5e7eb;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
+        .recommendation-box { background-color: #fefce8; border-left: 4px solid {{ storm.alert_color }}; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .recommendation-box strong { color: {{ storm.alert_color }}; }
 
-        .city-name {
-            font-size: 2em;
-            font-weight: bold;
-            color: #1e293b;
-        }
+        .factors-list { list-style: none; padding: 0; margin: 0; }
+        .factor-item { padding: 12px; margin-bottom: 10px; background-color: #f8fafc; border-radius: 8px; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+        .factor-item:hover { transform: translateX(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .factor-icon { color: #f59e0b; }
 
-        .risk-badge {
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: bold;
-            font-size: 1.1em;
-            background: {{ storm.alert_color }};
-            color: white;
-        }
+        .timeline-container { position: relative; margin-top: 25px; }
+        .timeline-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .timeline-item { background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-left: 4px solid {{ storm.alert_color }}; transition: all 0.3s; }
+        .timeline-item:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .timeline-time { font-size: 1.3em; font-weight: bold; color: {{ storm.alert_color }}; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .timeline-event { font-size: 1em; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
+        .timeline-rainfall { font-size: 0.85em; color: #64748b; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; margin-top: 8px; display: inline-block; }
 
-        .probability-section {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            margin: 30px 0;
-            flex-wrap: wrap;
-            gap: 30px;
-        }
+        #map { height: 450px; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
 
-        .probability-circle {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: conic-gradient({{ storm.alert_color }} 0% {{ storm.probability }}%, #e5e7eb {{ storm.probability }}% 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
+        .shelters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 20px; }
+        .shelter-card { background: linear-gradient(135deg, #ffffff, #f9fafb); border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .shelter-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); border-color: #2563eb; }
+        .shelter-header { display: flex; gap: 15px; margin-bottom: 15px; }
+        .shelter-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #2563eb, #3b82f6); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5em; color: white; flex-shrink: 0; }
+        .shelter-info h4 { font-size: 1.1em; color: #1e293b; margin-bottom: 5px; }
+        .shelter-address { font-size: 0.85em; color: #64748b; }
+        .shelter-details { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 15px 0; padding: 15px; background: #f8fafc; border-radius: 8px; }
+        .shelter-stat { display: flex; align-items: center; gap: 8px; font-size: 0.9em; color: #475569; }
+        .shelter-stat i { color: #2563eb; width: 16px; }
+        .distance-info { display: flex; flex-direction: column; gap: 4px; }
+        .distance-primary { font-weight: bold; color: #1e293b; }
+        .distance-secondary { font-size: 0.85em; color: #64748b; }
 
-        .probability-inner {
-            width: 160px;
-            height: 160px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
+        .directions-btn { width: 100%; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .directions-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-        .probability-value {
-            font-size: 3.5em;
-            font-weight: bold;
-            color: {{ storm.alert_color }};
-        }
+        .no-shelters-warning { padding: 30px; text-align: center; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; }
+        .no-shelters-warning i { font-size: 3em; color: #f59e0b; margin-bottom: 15px; display: block; }
+        .no-shelters-warning h3 { color: #92400e; margin-bottom: 10px; }
+        .no-shelters-warning p { color: #78350f; margin-bottom: 15px; }
+        .alternatives-box { background: white; padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; }
+        .alternatives-box strong { color: #92400e; display: block; margin-bottom: 10px; }
+        .alternatives-box ul { margin: 10px 0 0 20px; color: #78350f; }
+        .alternatives-box li { margin: 8px 0; }
 
-        .probability-label {
-            font-size: 0.9em;
-            color: #64748b;
-        }
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #ffffff; margin: 10% auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .close { font-size: 25px; font-weight: bold; cursor: pointer; }
+        .search-box { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; }
+        
+        .city-group { margin-bottom: 20px; }
+        .city-group-title { font-weight: bold; color: #2563eb; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #e5e7eb; }
+        .city-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+        .city-item { padding: 8px; background: #f8fafc; border-radius: 6px; cursor: pointer; transition: all 0.2s; text-align: center; font-size: 0.9em; }
+        .city-item:hover { background: #2563eb; color: white; }
 
-        .wind-indicator {
-            text-align: center;
-        }
-
-        .wind-arrow {
-            font-size: 4em;
-            color: {{ storm.alert_color }};
-            transform: rotate({{ storm.wind_degrees }}deg);
-            display: inline-block;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .wind-info {
-            margin-top: 10px;
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #1e293b;
-        }
-
-        .wind-desc {
-            color: #64748b;
-            font-size: 0.9em;
-        }
-
-        .recommendation-box {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            border-left: 4px solid {{ storm.alert_color }};
-        }
-
-        .recommendation-box strong {
-            color: {{ storm.alert_color }};
-            font-size: 1.1em;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        @media (max-width: 968px) {
-            .grid { grid-template-columns: 1fr; }
-            h1 { font-size: 1.5em; }
-            select { min-width: 180px; }
-        }
-
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .card-title {
-            font-size: 1.5em;
-            color: #1e293b;
-            margin-bottom: 20px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .factors-list { list-style: none; }
-
-        .factor-item {
-            padding: 15px;
-            margin-bottom: 10px;
-            background-color: #f8fafc;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .factor-icon {
-            color: #f59e0b;
-            font-size: 1.3em;
-            min-width: 30px;
-        }
-
-        .forecast-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
-
-        .forecast-card {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .forecast-time {
-            font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 1.1em;
-            color: #1e293b;
-        }
-
-        .forecast-temp {
-            font-size: 2em;
-            color: #0369a1;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-
-        .forecast-condition {
-            font-size: 0.9em;
-            color: #64748b;
-            text-transform: capitalize;
-        }
-
-        .map-container {
-            height: 500px;
-            border-radius: 8px;
-            border: 2px solid #e5e7eb;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 300px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .nearby-risks {
-            margin-top: 20px;
-        }
-
-        .risk-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border-left: 4px solid #cbd5e1;
-        }
-
-        .risk-item.high { border-left-color: #ef4444; }
-        .risk-item.moderate { border-left-color: #f59e0b; }
-        .risk-item.low { border-left-color: #10b981; }
-
-        .risk-city {
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-        .risk-prob {
-            font-weight: bold;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.9em;
-        }
-
-        .risk-prob.high { background: #fee2e2; color: #dc2626; }
-        .risk-prob.moderate { background: #fef3c7; color: #d97706; }
-        .risk-prob.low { background: #d1fae5; color: #059669; }
-
-        .current-conditions {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .condition-box {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .condition-icon {
-            font-size: 2em;
-            margin-bottom: 8px;
-        }
-
-        .condition-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #0369a1;
-        }
-
-        .condition-label {
-            font-size: 0.85em;
-            color: #64748b;
-            margin-top: 5px;
-        }
-
-        @media (max-width: 768px) {
-            .current-conditions { grid-template-columns: repeat(2, 1fr); }
-            .probability-circle { width: 150px; height: 150px; }
-            .probability-inner { width: 120px; height: 120px; }
-            .probability-value { font-size: 2.5em; }
-            .wind-arrow { font-size: 3em; }
+        @media (max-width: 968px) { 
+            .probability-section { flex-direction: column; } 
+            .storm-info-grid { grid-template-columns: 1fr; }
+            .timeline-items { grid-template-columns: 1fr; } 
+            .shelters-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 1.5em; } 
         }
     </style>
 </head>
 <body>
+    <div id="alertBanner" class="alert-banner">
+        <div class="alert-banner-content">
+            <i class="fas fa-exclamation-triangle alert-banner-icon"></i>
+            <div class="alert-banner-text">
+                <h3 id="alertTitle">SEVERE WEATHER ALERT</h3>
+                <p id="alertMessage">High storm risk detected in your area</p>
+            </div>
+        </div>
+        <button class="alert-close" onclick="closeAlert()">&times;</button>
+    </div>
+
     <div class="header">
         <div class="header-content">
-            <h1><i class="fas fa-bolt"></i> Storm Prediction System</h1>
+            <h1><i class="fas fa-water"></i> COASTGUARD</h1>
             <div class="nav-section">
                 <a href="/" class="back-btn"><i class="fas fa-home"></i> Home</a>
                 <a href="/weather/{{ weather.city }}" class="back-btn"><i class="fas fa-cloud-sun"></i> Weather</a>
-                <select id="citySelect" onchange="changeCity()">
-                    <option value="">Select another city...</option>
-                    {% for city in cities %}
-                        <option value="{{ city.name }}" {% if city.name == selected_city %}selected{% endif %}>{{ city.name }}</option>
-                    {% endfor %}
-                </select>
+                <button class="city-search-btn" onclick="openCityModal()"><i class="fas fa-search"></i> Search City</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-city"></i> Select City</h2>
+                <span class="close" onclick="closeCityModal()">&times;</span>
+            </div>
+            <input type="text" id="citySearch" class="search-box" placeholder="Search for a city..." onkeyup="filterCities()">
+            <div id="cityGroups">
+                <div class="city-group">
+                    <div class="city-group-title">East Coast</div>
+                    <div class="city-list" id="eastCoast">
+                        {% for city in cities %}{% if city.coast == 'East Coast' %}
+                        <div class="city-item" onclick="navigateToStorm('{{ city.name }}')">{{ city.name }}</div>
+                        {% endif %}{% endfor %}
+                    </div>
+                </div>
+                <div class="city-group">
+                    <div class="city-group-title">West Coast</div>
+                    <div class="city-list" id="westCoast">
+                        {% for city in cities %}{% if city.coast == 'West Coast' %}
+                        <div class="city-item" onclick="navigateToStorm('{{ city.name }}')">{{ city.name }}</div>
+                        {% endif %}{% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -388,10 +189,9 @@
     <div class="container">
         <div class="alert-card">
             <div class="city-header">
-                <h2 class="city-name">{{ weather.city }}, {{ coast }}</h2>
+                <h2 class="city-name">{{ weather.city }} - Storm Risk</h2>
                 <span class="risk-badge">{{ storm.risk_level }} Risk</span>
             </div>
-
             <div class="probability-section">
                 <div class="probability-circle">
                     <div class="probability-inner">
@@ -399,273 +199,381 @@
                         <div class="probability-label">Storm Probability</div>
                     </div>
                 </div>
-
                 <div class="wind-indicator">
-                    <div class="wind-arrow">
-                        <i class="fas fa-location-arrow"></i>
-                    </div>
-                    <div class="wind-info">{{ storm.wind_direction }}</div>
+                    <div class="wind-arrow"><i class="fas fa-arrow-up"></i></div>
+                    <div class="wind-info">{{ weather.wind_speed }} m/s</div>
                     <div class="wind-desc">{{ storm.wind_info }}</div>
-                    <div class="wind-desc" style="margin-top: 5px;">{{ weather.wind_speed }} m/s</div>
+                </div>
+            </div>
+
+            <div class="storm-info-grid">
+                <div class="info-box accent">
+                    <h3><i class="fas fa-hurricane"></i> Storm Type</h3>
+                    <div class="value">{{ storm.storm_type }}</div>
+                </div>
+                <div class="info-box accent">
+                    <h3><i class="fas fa-cloud-showers-heavy"></i> Expected Rainfall</h3>
+                    <div class="value">{{ storm.rainfall_type }}</div>
                 </div>
             </div>
 
             <div class="recommendation-box">
-                <strong><i class="fas fa-info-circle"></i> Safety Recommendation:</strong><br>
-                <span style="color: #1e293b; margin-top: 8px; display: block;">{{ storm.recommendation }}</span>
+                <strong><i class="fas fa-exclamation-triangle"></i> Recommendation:</strong>
+                <p>{{ storm.recommendation }}</p>
             </div>
         </div>
 
-        <div class="grid">
-            <div class="card">
-                <h3 class="card-title"><i class="fas fa-list-check"></i> Risk Factors Analysis</h3>
-                <ul class="factors-list">
-                    {% for factor in storm.factors %}
-                    <li class="factor-item">
-                        <i class="fas fa-exclamation-triangle factor-icon"></i>
-                        <span>{{ factor }}</span>
-                    </li>
+        <div class="card">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-clock"></i> Storm Timeline & Rainfall Forecast</h3>
+            <div class="timeline-container">
+                <div class="timeline-items">
+                    {% for t in storm.timeline %}
+                    <div class="timeline-item">
+                        <div class="timeline-time">
+                            <i class="fas fa-calendar-day"></i>
+                            {{ t.time }}
+                        </div>
+                        <div class="timeline-event">
+                            <i class="fas fa-bolt"></i> {{ t.event }}
+                        </div>
+                        <div class="timeline-rainfall">
+                            <i class="fas fa-tint"></i> {{ t.rainfall }}
+                        </div>
+                    </div>
                     {% endfor %}
-                    {% if storm.factors|length == 0 %}
-                    <li class="factor-item">
-                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                        <span>No significant storm risk factors detected</span>
-                    </li>
-                    {% endif %}
-                </ul>
-
-                <div class="current-conditions">
-                    <div class="condition-box">
-                        <div class="condition-icon"><i class="fas fa-gauge" style="color: #f59e0b;"></i></div>
-                        <div class="condition-value">{{ weather.pressure }}</div>
-                        <div class="condition-label">Pressure (hPa)</div>
-                    </div>
-                    <div class="condition-box">
-                        <div class="condition-icon"><i class="fas fa-tint" style="color: #06b6d4;"></i></div>
-                        <div class="condition-value">{{ weather.humidity }}%</div>
-                        <div class="condition-label">Humidity</div>
-                    </div>
-                    <div class="condition-box">
-                        <div class="condition-icon"><i class="fas fa-wind" style="color: #8b5cf6;"></i></div>
-                        <div class="condition-value">{{ weather.wind_speed }}</div>
-                        <div class="condition-label">Wind (m/s)</div>
-                    </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="nearby-risks">
-                    <h4 style="margin-top: 25px; margin-bottom: 15px; color: #1e293b; font-size: 1.2em;">
-                        <i class="fas fa-map-marked-alt"></i> Nearby Coastal Areas Risk
-                    </h4>
-                    {% if nearby_risks %}
-                        {% for risk in nearby_risks %}
-                        <div class="risk-item {% if risk.probability >= 60 %}high{% elif risk.probability >= 35 %}moderate{% else %}low{% endif %}">
-                            <div>
-                                <span class="risk-city">{{ risk.city }}</span>
-                                <span style="color: #64748b; font-size: 0.9em; margin-left: 10px;">{{ risk.distance }} km away</span>
+        <div class="card">
+            <h3 style="margin-bottom: 15px;"><i class="fas fa-map-marked-alt"></i> Storm Risk Area & Emergency Shelters</h3>
+            <div id="map"></div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-home"></i> Nearest Emergency Shelters</h3>
+            <p style="color: #64748b; margin-bottom: 20px;">
+                <span id="locationStatus">Calculating distances from your location...</span>
+            </p>
+            {% if shelters and shelters|length > 0 %}
+            <div class="shelters-grid">
+                {% for shelter in shelters %}
+                <div class="shelter-card" data-lat="{{ shelter.lat }}" data-lon="{{ shelter.lon }}" data-name="{{ shelter.name }}">
+                    <div class="shelter-header">
+                        <div class="shelter-icon">
+                            <i class="fas fa-{{ shelter.icon }}"></i>
+                        </div>
+                        <div class="shelter-info">
+                            <h4>{{ shelter.name }}</h4>
+                            <p class="shelter-address"><i class="fas fa-map-marker-alt"></i> {{ shelter.address }}</p>
+                        </div>
+                    </div>
+                    <div class="shelter-details">
+                        <div class="shelter-stat">
+                            <i class="fas fa-route"></i>
+                            <div class="distance-info">
+                                <span class="distance-primary distance-display">Calculating...</span>
+                                <span class="distance-secondary straight-line-display"></span>
                             </div>
-                            <span class="risk-prob {% if risk.probability >= 60 %}high{% elif risk.probability >= 35 %}moderate{% else %}low{% endif %}">
-                                {{ risk.probability }}%
-                            </span>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <p style="color: #64748b; padding: 15px; text-align: center;">No nearby coastal areas data available</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 class="card-title"><i class="fas fa-map"></i> Regional Storm Risk Map</h3>
-                <div class="map-container" id="stormMap"></div>
-            </div>
-        </div>
-
-        <div class="grid">
-            <div class="card">
-                <h3 class="card-title"><i class="fas fa-clock"></i> 12-Hour Forecast</h3>
-                {% if forecast %}
-                <div class="forecast-grid">
-                    {% for f in forecast %}
-                    <div class="forecast-card">
-                        <div class="forecast-time">{{ f.time }}</div>
-                        <div class="forecast-temp">{{ f.temp }}°C</div>
-                        <div class="forecast-condition">{{ f.condition }}</div>
-                        <div style="margin-top: 10px; font-size: 0.85em; color: #64748b;">
-                            <div>💧 {{ f.humidity }}%</div>
-                            <div>💨 {{ f.wind_speed }} m/s</div>
-                            <div>📊 {{ f.pressure }} hPa</div>
+                        <div class="shelter-stat">
+                            <i class="fas fa-users"></i>
+                            <span>Capacity: {{ shelter.capacity }}</span>
                         </div>
                     </div>
-                    {% endfor %}
+                    <button class="directions-btn" onclick="showDirections({{ shelter.lat }}, {{ shelter.lon }}, '{{ shelter.name }}')">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </button>
                 </div>
-                {% else %}
-                <p style="text-align: center; padding: 40px; color: #64748b;">Forecast data temporarily unavailable</p>
-                {% endif %}
+                {% endfor %}
             </div>
+            {% else %}
+            <div class="no-shelters-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>No Emergency Shelters Found</h3>
+                <p>
+                    We couldn't locate any registered emergency shelters in your immediate area. 
+                    This doesn't mean there aren't safe locations available.
+                </p>
+                <div class="alternatives-box">
+                    <strong>Alternative Safety Options:</strong>
+                    <ul>
+                        <li>Contact local emergency services: <strong>108 or 112</strong></li>
+                        <li>Seek higher ground away from coastal areas</li>
+                        <li>Contact your local municipal office for shelter information</li>
+                        <li>Check with neighbors about community gathering points</li>
+                        <li>Move inland to relatives or friends in safer areas</li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
 
-            <div class="card">
-                <h3 class="card-title"><i class="fas fa-chart-line"></i> Weather Trend Analysis</h3>
-                <div class="chart-wrapper">
-                    <canvas id="trendChart"></canvas>
-                </div>
-            </div>
+        <div class="card">
+            <h3><i class="fas fa-list-ul"></i> Contributing Factors</h3>
+            <ul class="factors-list">
+                {% for factor in storm.factors %}
+                <li class="factor-item"><i class="fas fa-asterisk factor-icon"></i> {{ factor }}</li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
 
     <script>
-        let stormMap;
+        var userLat = {{ weather.lat }};
+        var userLon = {{ weather.lon }};
+        var userLocationSet = false;
+        var map;
 
-        function initStormMap() {
-            const lat = {{ weather.lat }};
-            const lon = {{ weather.lon }};
+        function showRiskAlert() {
+            var probability = {{ storm.probability }};
+            var riskLevel = '{{ storm.risk_level }}';
+            var alertBanner = document.getElementById('alertBanner');
+            var alertTitle = document.getElementById('alertTitle');
+            var alertMessage = document.getElementById('alertMessage');
+
+            if (probability >= 70) {
+                alertBanner.className = 'alert-banner critical';
+                alertTitle.textContent = 'CRITICAL STORM ALERT - EVACUATE NOW';
+                alertMessage.textContent = `${probability}% storm probability detected in {{ weather.city }}. Immediate evacuation recommended. Seek shelter inland.`;
+                alertBanner.style.display = 'flex';
+            } else if (probability >= 45) {
+                alertBanner.className = 'alert-banner high';
+                alertTitle.textContent = 'HIGH STORM RISK ALERT';
+                alertMessage.textContent = `${probability}% storm probability in {{ weather.city }}. Secure property, avoid coastal areas, and monitor updates closely.`;
+                alertBanner.style.display = 'flex';
+            } else if (probability >= 30) {
+                alertBanner.className = 'alert-banner moderate';
+                alertTitle.textContent = 'MODERATE STORM RISK';
+                alertMessage.textContent = `${probability}% storm probability in {{ weather.city }}. Stay alert and prepared for changing conditions.`;
+                alertBanner.style.display = 'flex';
+                setTimeout(function() { alertBanner.style.display = 'none'; }, 10000);
+            }
+        }
+
+        function closeAlert() {
+            document.getElementById('alertBanner').style.display = 'none';
+        }
+
+        window.addEventListener('load', function() {
+            setTimeout(showRiskAlert, 500);
+        });
+
+        function openCityModal() { document.getElementById('cityModal').style.display = 'block'; }
+        function closeCityModal() { document.getElementById('cityModal').style.display = 'none'; }
+        window.onclick = function(event) { if(event.target == document.getElementById('cityModal')) { closeCityModal(); } }
+        function navigateToStorm(city){ window.location.href = `/storm/${city}`; }
+        function filterCities() {
+            let input = document.getElementById('citySearch').value.toLowerCase();
+            document.querySelectorAll('.city-item').forEach(item => {
+                item.style.display = item.textContent.toLowerCase().includes(input) ? 'block' : 'none';
+            });
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return (R * c).toFixed(2);
+        }
+
+        function updateShelterDistances() {
+            console.log('=== UPDATING SHELTER DISTANCES ===');
+            console.log('User Location:', userLat, userLon);
             
-            stormMap = L.map('stormMap').setView([lat, lon], 7);
+            var shelterCards = document.querySelectorAll('.shelter-card');
+            console.log('Total shelter cards found:', shelterCards.length);
+            
+            var shelterDistances = [];
+            
+            shelterCards.forEach((card, index) => {
+                var shelterLat = parseFloat(card.getAttribute('data-lat'));
+                var shelterLon = parseFloat(card.getAttribute('data-lon'));
+                var shelterName = card.getAttribute('data-name');
+                var straightLineDistance = calculateDistance(userLat, userLon, shelterLat, shelterLon);
+                
+                var distanceDisplay = card.querySelector('.distance-display');
+                var straightLineDisplay = card.querySelector('.straight-line-display');
+                
+                if (distanceDisplay) {
+                    distanceDisplay.innerHTML = `${straightLineDistance} km <span style="font-size: 0.85em; color: #64748b;">(straight-line)</span>`;
+                }
+                
+                if (straightLineDisplay) {
+                    straightLineDisplay.innerHTML = '';
+                }
+                
+                shelterDistances.push({
+                    card: card,
+                    distance: parseFloat(straightLineDistance),
+                    name: shelterName
+                });
+            });
+            
+            shelterDistances.sort((a, b) => a.distance - b.distance);
+            var grid = document.querySelector('.shelters-grid');
+            if (grid) {
+                shelterDistances.forEach(item => grid.appendChild(item.card));
+            }
+            console.log('All shelters sorted by distance');
+        }
+
+        function initMap() {
+            map = L.map('map', {
+                minZoom: 11,
+                maxZoom: 15
+            }).setView([{{ weather.lat }}, {{ weather.lon }}], 12);
+            
+            var style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse-marker {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.8; }
+                }
+            `;
+            document.head.appendChild(style);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(stormMap);
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
 
-            const indiaBounds = L.latLngBounds([6.5, 68.0], [35.5, 97.5]);
-            stormMap.setMaxBounds(indiaBounds);
-            stormMap.setMinZoom(5);
-
-            // Current city marker with wind direction
-            const currentIcon = L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div style="background: {{ storm.alert_color }}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                    <i class="fas fa-exclamation" style="transform: rotate({{ storm.wind_degrees }}deg);"></i>
-                </div>`,
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
+            var southWest = L.latLng({{ weather.lat }} - 0.27, {{ weather.lon }} - 0.27);
+            var northEast = L.latLng({{ weather.lat }} + 0.27, {{ weather.lon }} + 0.27);
+            var bounds = L.latLngBounds(southWest, northEast);
+            map.setMaxBounds(bounds);
+            map.on('drag', function() {
+                map.panInsideBounds(bounds, { animate: false });
             });
 
-            L.marker([lat, lon], { icon: currentIcon }).addTo(stormMap)
-                .bindPopup(`<b>{{ weather.city }}</b><br>
-                    Storm Risk: <b style="color: {{ storm.alert_color }};">{{ storm.probability }}%</b><br>
-                    Wind: {{ storm.wind_direction }} {{ weather.wind_speed }} m/s<br>
-                    Pressure: {{ weather.pressure }} hPa`).openPopup();
+            L.marker([{{ weather.lat }}, {{ weather.lon }}]).addTo(map)
+                .bindPopup('<b>{{ weather.city }}</b><br>Risk: {{ storm.risk_level }}<br>Probability: {{ storm.probability }}%').openPopup();
 
-            // Wind direction arrow from current city
-            const windEndLat = lat + Math.cos(({{ storm.wind_degrees }} - 180) * Math.PI / 180) * 0.5;
-            const windEndLon = lon + Math.sin(({{ storm.wind_degrees }} - 180) * Math.PI / 180) * 0.5;
+            var riskColor = '{{ storm.alert_color }}';
+            var probability = {{ storm.probability }};
             
-            L.polyline([[lat, lon], [windEndLat, windEndLon]], {
-                color: '{{ storm.alert_color }}',
-                weight: 4,
-                opacity: 0.7,
-                dashArray: '10, 10'
-            }).addTo(stormMap).bindPopup('Wind Direction');
+            var radiusKm = 5 + (probability * 0.1);
+            var radiusMeters = radiusKm * 1000;
 
-            // Add nearby cities with risk indicators
-            {% if nearby_risks %}
-            const nearbyData = {{ nearby_risks | tojson }};
-            nearbyData.forEach(risk => {
-                let color, size;
-                if (risk.probability >= 60) {
-                    color = '#dc2626';
-                    size = 30;
-                } else if (risk.probability >= 35) {
-                    color = '#f59e0b';
-                    size = 25;
-                } else {
-                    color = '#10b981';
-                    size = 20;
-                }
+            L.circle([{{ weather.lat }}, {{ weather.lon }}], {
+                color: riskColor,
+                fillColor: riskColor,
+                fillOpacity: 0.25,
+                radius: radiusMeters,
+                weight: 3,
+                opacity: 0.8
+            }).addTo(map).bindPopup(`
+                <strong>{{ weather.city }} Risk Zone</strong><br>
+                Probability: <strong>{{ storm.probability }}%</strong><br>
+                Radius: <strong>${Math.round(radiusKm)} km</strong><br>
+                Risk Level: <strong>{{ storm.risk_level }}</strong>
+            `);
 
-                const marker = L.circleMarker([risk.lat, risk.lon], {
-                    radius: size / 2,
-                    fillColor: color,
-                    color: '#fff',
+            if (probability > 60) {
+                var outerRadiusKm = radiusKm * 1.8;
+                var outerRadiusMeters = outerRadiusKm * 1000;
+                
+                L.circle([{{ weather.lat }}, {{ weather.lon }}], {
+                    color: riskColor,
+                    fillColor: riskColor,
+                    fillOpacity: 0.1,
+                    radius: outerRadiusMeters,
                     weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.7
-                }).addTo(stormMap);
+                    opacity: 0.5,
+                    dashArray: '10, 10'
+                }).addTo(map).bindPopup(`
+                    <strong>Extended Warning Zone</strong><br>
+                    Radius: <strong>${Math.round(outerRadiusKm)} km</strong><br>
+                    <em>Exercise caution in this area</em>
+                `);
+            }
 
-                marker.bindPopup(`<b>${risk.city}</b><br>
-                    Risk: <b style="color: ${color};">${risk.probability}%</b><br>
-                    Distance: ${risk.distance} km<br>
-                    Status: ${risk.risk_level}`);
+            var shelterIcon = L.divIcon({
+                className: 'shelter-marker',
+                html: '<div style="background: #10b981; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"><i class="fas fa-home" style="color: white; font-size: 12px;"></i></div>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
             });
-            {% endif %}
 
-            // Add legend
-            const legend = L.control({ position: 'bottomright' });
-            legend.onAdd = function(map) {
-                const div = L.DomUtil.create('div', 'info legend');
-                div.style.background = 'white';
-                div.style.padding = '10px';
-                div.style.borderRadius = '8px';
-                div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-                div.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 5px;">Storm Risk Level</div>
-                    <div><span style="color: #dc2626;">●</span> Very High (60%+)</div>
-                    <div><span style="color: #f59e0b;">●</span> High/Moderate (35-59%)</div>
-                    <div><span style="color: #10b981;">●</span> Low (<35%)</div>
-                `;
-                return div;
-            };
-            legend.addTo(stormMap);
+            {% for shelter in shelters %}
+            var shelterMarker{{ loop.index0 }} = L.marker([{{ shelter.lat }}, {{ shelter.lon }}], { icon: shelterIcon }).addTo(map);
+            shelterMarker{{ loop.index0 }}.bindPopup(`
+                <div style="min-width: 200px;">
+                    <strong style="color: #10b981; font-size: 1.1em;">{{ shelter.name }}</strong><br>
+                    <div style="margin: 8px 0; padding: 8px 0; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;">
+                        <div style="margin: 4px 0;"><i class="fas fa-route" style="color: #64748b; width: 16px;"></i> <span class="shelter-popup-distance-{{ loop.index0 }}">Distance calculating...</span></div>
+                        <div style="margin: 4px 0;"><i class="fas fa-users" style="color: #64748b; width: 16px;"></i> Capacity: {{ shelter.capacity }}</div>
+                    </div>
+                    <button onclick="showDirections({{ shelter.lat }}, {{ shelter.lon }}, '{{ shelter.name }}')" 
+                            style="width: 100%; padding: 8px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 8px;">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </button>
+                </div>
+            `);
+            {% endfor %}
         }
 
-        function changeCity() {
-            const city = document.getElementById('citySelect').value;
-            if (city) window.location.href = `/storm/${city}`;
+        function showDirections(lat, lon, name) {
+            var googleMapsUrl = `https://www.google.com/maps/dir/${userLat},${userLon}/${lat},${lon}`;
+            window.open(googleMapsUrl, '_blank');
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initStormMap();
+        initMap();
 
-            {% if forecast %}
-            const ctx = document.getElementById('trendChart').getContext('2d');
-            const forecastData = {{ forecast | tojson }};
+        if (navigator.geolocation) {
+            document.getElementById('locationStatus').innerHTML = 'Requesting your location...';
             
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: forecastData.map(f => f.time),
-                    datasets: [{
-                        label: 'Temperature (°C)',
-                        data: forecastData.map(f => f.temp),
-                        borderColor: 'rgb(3, 105, 161)',
-                        backgroundColor: 'rgba(3, 105, 161, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        yAxisID: 'y'
-                    }, {
-                        label: 'Humidity (%)',
-                        data: forecastData.map(f => f.humidity),
-                        borderColor: 'rgb(6, 182, 212)',
-                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        yAxisID: 'y1'
-                    }, {
-                        label: 'Pressure (hPa)',
-                        data: forecastData.map(f => f.pressure),
-                        borderColor: 'rgb(245, 158, 11)',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        yAxisID: 'y2'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' },
-                        title: { display: true, text: 'Weather Parameters Forecast' }
-                    },
-                    scales: {
-                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Temp (°C)' } },
-                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Humidity (%)' } },
-                        y2: { type: 'linear', display: false }
-                    }
+            navigator.geolocation.getCurrentPosition(function(position) {
+                userLat = position.coords.latitude;
+                userLon = position.coords.longitude;
+                userLocationSet = true;
+                
+                console.log('✓ GPS Location obtained:', userLat, userLon);
+                document.getElementById('locationStatus').innerHTML = 'Using your actual GPS location for accurate distance calculation';
+                
+                updateShelterDistances();
+                
+                {% for shelter in shelters %}
+                var straightLine{{ loop.index0 }} = calculateDistance(userLat, userLon, {{ shelter.lat }}, {{ shelter.lon }});
+                var popupDistance{{ loop.index0 }} = document.querySelector('.shelter-popup-distance-{{ loop.index0 }}');
+                if (popupDistance{{ loop.index0 }}) {
+                    popupDistance{{ loop.index0 }}.innerHTML = straightLine{{ loop.index0 }} + ' km away';
                 }
+                {% endfor %}
+                
+                var userIcon = L.divIcon({
+                    className: 'user-marker',
+                    html: '<div style="background: #ef4444; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.4); animation: pulse-marker 2s infinite;"><i class="fas fa-user" style="color: white; font-size: 14px;"></i></div>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+                
+                L.marker([userLat, userLon], { icon: userIcon }).addTo(map)
+                    .bindPopup('<strong style="color: #ef4444;">Your Location</strong>').openPopup();
+                
+                var group = L.featureGroup([
+                    L.marker([userLat, userLon]),
+                    L.marker([{{ weather.lat }}, {{ weather.lon }}])
+                ]);
+                map.fitBounds(group.getBounds().pad(0.2));
+                
+            }, function(error) {
+                console.log('Location access denied or unavailable, using city center');
+                console.log('Error:', error.message);
+                document.getElementById('locationStatus').innerHTML = 'Location access denied - Using city center ({{ weather.city }}) for estimates';
+                
+                updateShelterDistances();
             });
-            {% endif %}
-        });
+        } else {
+            console.log('Geolocation not supported by browser');
+            document.getElementById('locationStatus').innerHTML = 'Geolocation not supported - Using city center ({{ weather.city }})';
+            
+            updateShelterDistances();
+        }
     </script>
 </body>
 </html>

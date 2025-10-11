@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indian Coastal Weather Dashboard</title>
+    <title>Coastguard - Indian Coastal Weather Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -171,7 +171,7 @@
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 25px;
             margin-top: 30px;
         }
@@ -228,6 +228,21 @@
             border: 2px solid #e5e7eb;
         }
 
+        .section-header {
+            font-size: 2em;
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .section-subtitle {
+            font-size: 1.1em;
+            color: #64748b;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
         .loader {
             display: inline-block;
             width: 20px;
@@ -254,13 +269,17 @@
             select {
                 min-width: 200px;
             }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-content">
-            <h1><i class="fas fa-water"></i> Indian Coastal Weather Dashboard</h1>
+            <h1><i class="fas fa-water"></i> COASTGUARD</h1>
             <div class="search-section">
                 <select id="citySelect">
                     <option value="">Select a coastal city...</option>
@@ -292,53 +311,99 @@
                 <div class="hero-icon">
                     <i class="fas fa-cloud-sun"></i>
                 </div>
-                <h2 class="hero-title">Real-Time Coastal Weather Monitoring</h2>
-                <p class="hero-subtitle">Get accurate weather information for major coastal cities across India</p>
+                <h2 class="hero-title">Real-Time Coastal Weather & Storm Monitoring</h2>
+                <p class="hero-subtitle">Advanced weather forecasting and storm risk prediction for major coastal cities across India</p>
                 
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-city"></i></div>
-                        <div class="stat-number">18</div>
-                        <div class="stat-label">Coastal Cities</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-map-marked-alt"></i></div>
-                        <div class="stat-number">2</div>
-                        <div class="stat-label">Coast Regions</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                        <div class="stat-number">Live</div>
-                        <div class="stat-label">Real-Time Data</div>
-                    </div>
-                </div>
-            </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-city"></i></div>
+        <div class="stat-number">18</div>
+        <div class="stat-label">Coastal Cities</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-map-marked-alt"></i></div>
+        <div class="stat-number">2</div>
+        <div class="stat-label">Coast Regions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-number">Live</div>
+        <div class="stat-label">Real-Time Data</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+        <div class="stat-number">Storm Alerts</div>
+        <div class="stat-label"></div>
+    </div>
+    <!-- ✅ Added Community Shelters inside grid -->
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-building"></i></div>
+        <div class="stat-number">Community Shelters</div>
+        <div class="stat-label"></div>
+    </div>
+</div>
 
             <div class="map-container">
                 <h3 class="map-title"><i class="fas fa-map"></i> Indian Coastal Regions</h3>
                 <div id="homeMap"></div>
             </div>
 
+            <h2 class="section-header"><i class="fas fa-star"></i> Platform Features</h2>
+            <p class="section-subtitle">Comprehensive weather monitoring and safety tools for coastal communities</p>
+
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-temperature-high"></i></div>
                     <div class="feature-title">Temperature Details</div>
-                    <div class="feature-desc">Get current, minimum, and maximum temperature along with feels-like temperature</div>
+                    <div class="feature-desc">Get current, minimum, and maximum temperature along with feels-like temperature for accurate planning</div>
                 </div>
+                
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-wind"></i></div>
                     <div class="feature-title">Wind & Pressure</div>
-                    <div class="feature-desc">Track wind speed, direction, and atmospheric pressure in real-time</div>
+                    <div class="feature-desc">Track wind speed, direction, and atmospheric pressure in real-time with visual indicators</div>
                 </div>
+                
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-tint"></i></div>
                     <div class="feature-title">Humidity & Visibility</div>
-                    <div class="feature-desc">Monitor humidity levels and visibility conditions for coastal areas</div>
+                    <div class="feature-desc">Monitor humidity levels and visibility conditions crucial for coastal activities</div>
                 </div>
+                
                 <div class="feature-card">
-                    <div class="feature-icon"><i class="fas fa-map-pin"></i></div>
-                    <div class="feature-title">Interactive Map</div>
-                    <div class="feature-desc">Visualize city locations on an interactive map with weather markers</div>
+                    <div class="feature-icon"><i class="fas fa-hurricane"></i></div>
+                    <div class="feature-title">Storm Risk Assessment</div>
+                    <div class="feature-desc">Real-time storm probability calculation with risk levels: Critical, High, Moderate, Low, and Very Low</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-cloud-showers-heavy"></i></div>
+                    <div class="feature-title">Rainfall Forecasting</div>
+                    <div class="feature-desc">Detailed rainfall predictions with intensity classifications from light showers to extremely heavy rain (>205mm)</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-clock"></i></div>
+                    <div class="feature-title">Storm Timeline</div>
+                    <div class="feature-desc">Hour-by-hour storm progression with event types and rainfall predictions for better preparedness</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="feature-title">Safety Recommendations</div>
+                    <div class="feature-desc">Risk-based safety alerts and recommendations to protect lives and property during severe weather</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-map-marked"></i></div>
+                    <div class="feature-title">Risk Zone Mapping</div>
+                    <div class="feature-desc">Interactive maps showing localized storm impact zones with 5-15km radius precision</div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-building"></i></div>
+                    <div class="feature-title">Community Centers Locator</div>
+                    <div class="feature-desc">Find nearby emergency shelters and community centers along the coast for evacuation and safety during storms</div>
                 </div>
             </div>
         </div>
@@ -364,40 +429,42 @@
             homeMap.setMaxBounds(indiaBounds);
             homeMap.setMinZoom(4);
 
-            // Add markers for all cities
+            // Add markers with varied colors
+            const colors = ["#ef4444","#3b82f6","#10b981","#f59e0b","#8b5cf6","#ec4899"];
+            let colorIndex = 0;
+
             const cities = {{ cities | tojson }};
             
             cities.forEach(city => {
-                const color = city.coast === 'East Coast' ? '#ef4444' : '#3b82f6';
+                const color = colors[colorIndex % colors.length];
+                colorIndex++;
+                
                 const circleMarker = L.circleMarker([city.lat, city.lon], {
                     radius: 8,
                     fillColor: color,
                     color: '#fff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.8
+                    fillOpacity: 0.85
                 }).addTo(homeMap);
                 
                 circleMarker.bindPopup(`<b>${city.name}</b><br>${city.coast}`);
                 
-                // Make markers clickable to navigate to weather page
+                // Click → weather page
                 circleMarker.on('click', function() {
                     window.location.href = `/weather/${city.name}`;
                 });
             });
         }
 
-        // Initialize map on page load
         document.addEventListener('DOMContentLoaded', function() {
             initHomeMap();
         });
 
-        // Enable button when city is selected
         document.getElementById('citySelect').addEventListener('change', function() {
             document.getElementById('fetchBtn').disabled = !this.value;
         });
 
-        // Fetch weather - redirect to weather page
         function fetchWeather() {
             const select = document.getElementById('citySelect');
             const cityName = select.value;
@@ -408,11 +475,9 @@
             btn.innerHTML = '<span class="loader"></span>';
             btn.disabled = true;
 
-            // Redirect to weather page
             window.location.href = `/weather/${cityName}`;
         }
 
-        // Allow Enter key to trigger search
         document.getElementById('citySelect').addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value) {
                 fetchWeather();
