@@ -40,7 +40,7 @@ _Add screenshots of your `index.html`, `weather.html`, and `storm.html` pages he
 ```bash
 git clone <YOUR_REPO_URL>
 cd <YOUR_PROJECT_FOLDER>
-
+```
 
 <img width="1365" height="658" alt="image" src="https://github.com/user-attachments/assets/d32d14d9-a526-4363-a8b9-615da3818872" />
 <img width="1365" height="667" alt="image" src="https://github.com/user-attachments/assets/aa785102-1994-4d95-8e3b-1cc589c22e92" />
